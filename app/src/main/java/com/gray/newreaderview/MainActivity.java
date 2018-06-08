@@ -16,7 +16,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ReaderView reader = findViewById(R.id.readview);
-        reader.setDraw(new HorizontalMoveDraw(PageProperty.getInstance(this)));
+        reader.setDraw(new HorizontalMoveDraw(PageProperty.getInstance(this), reader));
         reader.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

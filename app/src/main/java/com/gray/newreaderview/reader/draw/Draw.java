@@ -3,11 +3,14 @@ package com.gray.newreaderview.reader.draw;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.view.MotionEvent;
 
 import com.gray.newreaderview.reader.element.BottomElement;
 import com.gray.newreaderview.reader.element.Element;
 import com.gray.newreaderview.reader.util.PageProperty;
+import com.gray.newreaderview.reader.view.ReaderView;
 
 import java.util.ArrayList;
 
@@ -15,17 +18,23 @@ import java.util.ArrayList;
  * @author wjy on 2018/6/7.
  */
 public abstract class Draw {
-    private Canvas mCanvas;
-    private Paint mPaint;
-    private PageProperty mPageProperty;
-    private Bitmap mCurrentBM;
-    private Bitmap mPreviousBM;
-    private Bitmap mNextBM;
+    protected Canvas mCanvas;
+    protected Paint mPaint;
+    protected PageProperty mPageProperty;
+    protected Bitmap mCurrentBM;
+    protected Bitmap mPreviousBM;
+    protected Bitmap mNextBM;
+    protected ReaderView mReaderView;
+    protected RectF mRectF;
+    protected Rect mRect;
 
-    public Draw(PageProperty pageProperty) {
+    public Draw(PageProperty pageProperty, ReaderView view) {
         this.mCanvas = new Canvas();
         mPaint = new Paint();
         mPageProperty = pageProperty;
+        mReaderView = view;
+        mRectF = new RectF();
+        mRect = new Rect();
         resetPaint();
     }
 
@@ -53,10 +62,12 @@ public abstract class Draw {
 
     public abstract boolean onTouchEvent(MotionEvent event);
 
-    public abstract void drawToNext(Bitmap mPreviousBM, Bitmap mCurrentBM,
-                                    Bitmap mNextBM, Canvas canvas);
+    public abstract void drawNext(Bitmap mCurrentBM,
+                                  Bitmap mNextBM);
 
-    public abstract void onDraw(Canvas canvas);
+    public abstract void drawPrevious(Bitmap mPreviousBM, Bitmap mCurrentBM);
+
+    public abstract void onDraw(Canvas canvas, Bitmap mPreviousBM, Bitmap mCurrentBM, Bitmap mNextBM);
 
     public void setCurrentBM(Bitmap mCurrentBM) {
         this.mCurrentBM = mCurrentBM;
@@ -69,4 +80,6 @@ public abstract class Draw {
     public void setNextBM(Bitmap mNextBM) {
         this.mNextBM = mNextBM;
     }
+
+
 }

@@ -24,21 +24,24 @@ public class ReaderView extends View {
     private Bitmap mNextBM;
     private final int DEF_WIDTH = 200;
     private final int DEF_Height = 200;
-    private int width = DEF_WIDTH;
-    private int height = DEF_Height;
-    private int mPaddingBottom;
-    private int mPaddingStart;
-    private int mPaddingEnd;
-    private int mPaddingTop;
+    private int mWidth = DEF_WIDTH;
+    private int mHeight = DEF_Height;
     private Scroller mScroller;
     private boolean mShowMenu;//是否显示pop
     private float mMinMove = 100;
-    float downX, downY;
+    float mDownX, mDownY, mOffsetX, mOffsetY;
     private float mShowPopMinX;
     private float mShowPopMaxX;
     private float mShowPopMinY;
     private float mShowPopMaxY;
     private Draw mDraw;
+    private int mDrawAction = DRAW_ACTION_NONE;
+    public static final int DRAW_ACTION_NONE = 0; //不执行
+    public static final int DRAW_ACTION_TO_NEXT = 1;//执行下翻页
+    public static final int DRAW_ACTION_TO_PREVIOUS = 2;//执行前翻页
+    public static final int DRAW_ACTION_RESET = 3;//执行复位
+    public static final int DRAW_ACTION_SCROLLING = 4;//执行中
+    private boolean mScrolling = false;
 
     public ReaderView(Context context) {
         this(context, null);
@@ -56,84 +59,101 @@ public class ReaderView extends View {
 
     private void initView() {
         mScroller = new Scroller(getContext(), new LinearInterpolator());
-        mPaddingTop = getPaddingTop();
-        mPaddingStart = getPaddingStart();
-        mPaddingEnd = getPaddingEnd();
-        mPaddingBottom = getPaddingBottom();
         mShowPopMaxX = UIUtils.getDisplayWidth(getContext()) * 2 / 3;
         mShowPopMinX = UIUtils.getDisplayWidth(getContext()) / 3;
         mShowPopMaxY = UIUtils.getDisplayHeight(getContext()) * 2 / 3;
         mShowPopMinY = UIUtils.getDisplayHeight(getContext()) / 3;
-        Log.e("initView", "minX " + mShowPopMinX);
-        Log.e("initView", "maxX " + mShowPopMaxX);
-        Log.e("initView", "minY " + mShowPopMinY);
-        Log.e("initView", "maxY " + mShowPopMaxY);
     }
 
     public void setDraw(Draw mDraw) {
         this.mDraw = mDraw;
-        mDraw.setCurrentBM(mCurrentBM);
-        mDraw.setNextBM(mNextBM);
-        mDraw.setPreviousBM(mPreviousBM);
 
+    }
+
+    public void setDrawAction(int drawAction) {
+        mDrawAction = drawAction;
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int width = widthMeasureSpec;
-        int height = heightMeasureSpec;
-        if (MeasureSpec.getMode(widthMeasureSpec) != MeasureSpec.EXACTLY) {
-            MeasureSpec.makeMeasureSpec(DEF_WIDTH, MeasureSpec.EXACTLY);
-        } else {
-            width = MeasureSpec.getSize(widthMeasureSpec);
-        }
-        if (MeasureSpec.getMode(heightMeasureSpec) != MeasureSpec.EXACTLY) {
-            MeasureSpec.makeMeasureSpec(DEF_Height, MeasureSpec.EXACTLY);
-        } else {
-            height = MeasureSpec.getSize(heightMeasureSpec);
-        }
-        super.onMeasure(width, height);
-
-    }
-
-    @Override
-    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        super.onLayout(changed, left, top, right, bottom);
+        int width = UIUtils.getDisplayWidth(getContext());
+        int height = UIUtils.getDisplayHeight(getContext());
+        int specW = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY);
+        int specH = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
         if (mCurrentBM == null) {
-            mCurrentBM = Bitmap.createBitmap(width - getPaddingStart() - getPaddingEnd(),
-                    height - getPaddingTop() - getPaddingBottom(), Bitmap.Config.ARGB_8888);
+            mCurrentBM = Bitmap.createBitmap(width,
+                    height, Bitmap.Config.RGB_565);
         }
         if (mPreviousBM == null) {
-            mPreviousBM = Bitmap.createBitmap(width - getPaddingStart() - getPaddingEnd(),
-                    height - getPaddingTop() - getPaddingBottom(), Bitmap.Config.ARGB_8888);
+            mPreviousBM = Bitmap.createBitmap(width,
+                    height, Bitmap.Config.RGB_565);
         }
         if (mNextBM == null) {
-            mNextBM = Bitmap.createBitmap(width - getPaddingStart() - getPaddingEnd(),
-                    height - getPaddingTop() - getPaddingBottom(), Bitmap.Config.ARGB_8888);
+            mNextBM = Bitmap.createBitmap(width,
+                    height, Bitmap.Config.RGB_565);
         }
+        super.onMeasure(specW, specH);
+        mDraw.drawNext(mCurrentBM, mNextBM);
+        mDraw.drawPrevious(mPreviousBM, mCurrentBM);
     }
+
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (mDraw != null) {
-            mDraw.onDraw(canvas);
+        if (mDraw == null) {
+            return;
+        }
+        switch (mDrawAction) {
+            case DRAW_ACTION_NONE:
+                Log.e("onDraw", "onDraw");
+                mDraw.onDraw(canvas, mPreviousBM, mCurrentBM, mNextBM);
+                break;
+            case DRAW_ACTION_RESET:
+
+                mDrawAction = DRAW_ACTION_SCROLLING;
+                break;
+            case DRAW_ACTION_TO_NEXT:
+
+                mDrawAction = DRAW_ACTION_SCROLLING;
+                break;
+            case DRAW_ACTION_TO_PREVIOUS:
+
+                mDrawAction = DRAW_ACTION_SCROLLING;
+                break;
         }
     }
 
     @Override
     public void computeScroll() {
-        Log.e("computeScroll", "computeScroll");
-        if (mScroller.computeScrollOffset()) {
-            float x = mScroller.getCurrX();
-            float y = mScroller.getCurrY();
-//            if (style.equals(STYLE_TOP_RIGHT)) {
-//                setTouchPoint(x, y, STYLE_TOP_RIGHT);
-//            } else {
-//                setTouchPoint(x, y, STYLE_LOWER_RIGHT);
-//            }
-            if (mScroller.getFinalX() == x && mScroller.getFinalY() == y) {
-//                setDefaultPath();
+        if (mDrawAction != DRAW_ACTION_NONE) {
+            if (!mScroller.computeScrollOffset()) {
+                //如果需要滚动，也没有正在计算的滚动，则开始滚动计算
+                mScroller.startScroll((int) mOffsetX, (int) mOffsetY,
+                        (int) (mWidth - Math.abs(mOffsetX)),
+                        (int) (mHeight - Math.abs(mOffsetY)));
             }
+        }
+        if (mScroller.computeScrollOffset()) {
+            //滚动计算未结束，则继续刷新页面
+            invalidate();
+        } else {
+            //结束则调用结束方法
+            scrollOver();
+            mDrawAction = DRAW_ACTION_NONE;
+        }
+    }
+
+    /**
+     * 滚动结束
+     */
+    private void scrollOver() {
+        //交换BitMap标记
+        if (mDrawAction == DRAW_ACTION_TO_NEXT) {
+            //看下一页
+            Bitmap temp = mCurrentBM;
+
+        } else if (mDrawAction == DRAW_ACTION_TO_PREVIOUS) {
+            //看前一页
         }
     }
 
@@ -143,13 +163,18 @@ public class ReaderView extends View {
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
-                downX = event.getX();
-                downY = event.getY();
+                mDownX = event.getX();
+                mDownY = event.getY();
+                mScroller.startScroll((int) mDownX, (int) mDownY, 0, 0);
                 break;
             case MotionEvent.ACTION_MOVE:
                 if (mShowMenu) {
-                    return false;
+                    return true;
                 }
+                mOffsetX = event.getX() - mDownX;
+                mOffsetY = event.getY() - mDownY;
+//                mScroller.setFinalX((int) (event.getX()));
+//                mScroller.setFinalY((int) (event.getY()));
                 break;
             case MotionEvent.ACTION_UP:
 //                if (mo != 0 && Math.abs(moveX) > minMove) {
@@ -165,10 +190,10 @@ public class ReaderView extends View {
 //                        return performClick();
 //                    }
 //                    int widthPer3 = UIUtils.getDisplayWidth(getContext()) / 3;
-//                    if (downX < widthPer3) {
+//                    if (mDownX < widthPer3) {
 //                        //
 //                        return true;
-//                    } else if (downX > 2 * widthPer3) {
+//                    } else if (mDownX > 2 * widthPer3) {
 //                        animController.moveToNext(changeX, mMoveY, mMoveX);
 //                        return true;
 //                    } else {
@@ -176,8 +201,8 @@ public class ReaderView extends View {
 //                        return performClick();
 //                    }
 //                }
-                if (downX > mShowPopMinX && downX < mShowPopMaxX
-                        && downY > mShowPopMinY && downY < mShowPopMaxY
+                if (mDownX > mShowPopMinX && mDownX < mShowPopMaxX
+                        && mDownY > mShowPopMinY && mDownY < mShowPopMaxY
                         && event.getY() > mShowPopMinY && event.getY() < mShowPopMaxY
                         && event.getX() > mShowPopMinX && event.getX() < mShowPopMaxX) {
                     return performClick();
@@ -186,8 +211,19 @@ public class ReaderView extends View {
         }
         if (mDraw != null) {
             mDraw.onTouchEvent(event);
-            postInvalidate();
         }
         return true;
+    }
+
+    public Bitmap getmCurrentBM() {
+        return mCurrentBM;
+    }
+
+    public Bitmap getmPreviousBM() {
+        return mPreviousBM;
+    }
+
+    public Bitmap getmNextBM() {
+        return mNextBM;
     }
 }
