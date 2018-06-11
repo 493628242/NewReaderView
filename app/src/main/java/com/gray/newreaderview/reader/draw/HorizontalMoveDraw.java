@@ -21,7 +21,7 @@ public class HorizontalMoveDraw extends Draw {
 
     private float mOffsetX;
     private float mOffsetY;
-    private final int minX = 50;
+    private final int minX = 100;
 
     public HorizontalMoveDraw(PageProperty pageProperty, ReaderView view) {
         super(pageProperty, view);
@@ -45,18 +45,18 @@ public class HorizontalMoveDraw extends Draw {
             case MotionEvent.ACTION_UP:
                 if (Math.abs(mOffsetX) > minX) {
                     if (mOffsetX > 0) {
-                        //向后翻
-                        mReaderView.setDrawAction(ReaderView.DRAW_ACTION_TO_NEXT);
-                    } else if (mOffsetX < 0) {
-                        //向前翻
+                        //看前一页
                         mReaderView.setDrawAction(ReaderView.DRAW_ACTION_TO_PREVIOUS);
+                    } else if (mOffsetX < 0) {
+                        //看后一页
+                        mReaderView.setDrawAction(ReaderView.DRAW_ACTION_TO_NEXT);
                     }
                 } else {
                     if (mDownX > UIUtils.getDisplayWidth(mReaderView.getContext()) >> 1) {
-                        //向后翻
+                        //看后一页
                         mReaderView.setDrawAction(ReaderView.DRAW_ACTION_TO_NEXT);
                     } else {
-                        //向前翻
+                        //看前一页
                         mReaderView.setDrawAction(ReaderView.DRAW_ACTION_TO_PREVIOUS);
                     }
                 }
@@ -92,12 +92,22 @@ public class HorizontalMoveDraw extends Draw {
 
     @Override
     public void onDraw(Canvas canvas, Bitmap mPreviousBM, Bitmap mCurrentBM, Bitmap mNextBM) {
-
         Log.e("WH", "onDraw: " + ~mPreviousBM.getWidth() + "\n" + mPreviousBM.getHeight());
         Log.e("onDraw", "onDraw: 移动");
         canvas.drawBitmap(mCurrentBM, mOffsetX, 0, null);
         canvas.drawBitmap(mPreviousBM, ~mPreviousBM.getWidth() + mOffsetX + 1, 0, null);
         canvas.drawBitmap(mNextBM, mNextBM.getWidth() + mOffsetX - 1, 0, null);
+    }
 
+    @Override
+    public void moveToNext(Canvas canvas, Bitmap mCurrentBM, Bitmap mNextBM, int currX, int currY) {
+        canvas.drawBitmap(mCurrentBM, currX, 0, null);
+        canvas.drawBitmap(mNextBM, mNextBM.getWidth() + currX - 1, 0, null);
+    }
+
+    @Override
+    public void moveToPrevious(Canvas canvas, Bitmap mPreviousBM, Bitmap mCurrentBM, int currX, int currY) {
+        canvas.drawBitmap(mCurrentBM, currX, 0, null);
+        canvas.drawBitmap(mPreviousBM, ~mPreviousBM.getWidth() + currX + 1, 0, null);
     }
 }

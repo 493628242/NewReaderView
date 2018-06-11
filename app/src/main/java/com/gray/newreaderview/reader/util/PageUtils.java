@@ -3,9 +3,7 @@ package com.gray.newreaderview.reader.util;
 import android.content.Context;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.os.AsyncTask;
 import android.support.annotation.NonNull;
-import android.util.Log;
 
 import com.gray.newreaderview.reader.bean.ChaptersBean;
 import com.gray.newreaderview.reader.element.AuthorHeadElement;
@@ -18,11 +16,12 @@ import com.gray.newreaderview.reader.element.SmallTitleElement;
 
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author wjy on 2018/6/7.
  */
-public class PageUtils extends AsyncTask<Void, Void, ArrayList<ArrayList<Element>>> {
+public class PageUtils {
     private String word = "";
     private String title = "";
     private String author = "";
@@ -37,7 +36,6 @@ public class PageUtils extends AsyncTask<Void, Void, ArrayList<ArrayList<Element
     private Paint mPaint;
     private SoftReference<Context> mSoftContext;
     private PageProperty mPageProperty;
-    private onPagingFinishListener listener;
 
     public PageUtils(Context context, PageProperty pageProperty) {
         elementsList = new ArrayList<>();
@@ -48,19 +46,19 @@ public class PageUtils extends AsyncTask<Void, Void, ArrayList<ArrayList<Element
         mPaint.setAntiAlias(true);
     }
 
-    public void setData(ChaptersBean bean) {
+    public List<ArrayList<Element>> setData(ChaptersBean bean) {
         title = bean.getName();
         word = BookStringUtils.formateContent(bean.getContent());
         author = BookStringUtils.formateContent(bean.getAuthorContent());
         unCal = word;
         unCalAuthor = author;
         index = bean.getIndex();
-        this.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR);
+        return paging();
     }
 
 
     //进行分页操作
-    public ArrayList<ArrayList<Element>> paging() {
+    private ArrayList<ArrayList<Element>> paging() {
         elementsList.clear();
         Rect rect = new Rect();
         boolean hasDrawAuthorHead = false;
@@ -263,9 +261,6 @@ public class PageUtils extends AsyncTask<Void, Void, ArrayList<ArrayList<Element
         return new SmallTitleElement(mSoftContext.get(), getSmallTitleUsefulString(title));
     }
 
-    public void setListener(onPagingFinishListener listener) {
-        this.listener = listener;
-    }
 
     private String getSmallTitleUsefulString(String string) {
         int usefulWidth = UIUtils.getDisplayWidth(mSoftContext.get())
@@ -321,26 +316,5 @@ public class PageUtils extends AsyncTask<Void, Void, ArrayList<ArrayList<Element
         return usefulString;
     }
 
-    @Override
-    protected ArrayList<ArrayList<Element>> doInBackground(Void... voids) {
-        return paging();
-    }
-
-    @Override
-    protected void onPostExecute(ArrayList<ArrayList<Element>> lists) {
-//        Log.e("onPostExecute", "1");
-//        chapterMap.put(index, lists);
-//        Log.e("onPostExecute", "2");
-//        wordMap.put(index, pageNum);
-//        Log.e("onPostExecute", "3");
-//        loadData();
-        if (listener != null) {
-            listener.onFinish(lists);
-        }
-    }
-
-    public interface onPagingFinishListener {
-        void onFinish(ArrayList<ArrayList<Element>> lists);
-    }
 }
 

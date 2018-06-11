@@ -121,7 +121,6 @@ public class ChaptersBean implements Serializable {
 
     @Override
     public boolean equals(Object obj) {
-
         return obj instanceof ChaptersBean && id == ((ChaptersBean) obj).getId();
     }
 

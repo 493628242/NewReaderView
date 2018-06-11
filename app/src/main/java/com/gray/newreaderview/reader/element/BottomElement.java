@@ -56,7 +56,7 @@ public class BottomElement extends Element {
     @Override
     public void draw(Canvas canvas, Paint paint) {
         Context context = contextSoftReference.get();
-        paint.setTextSize(pageProperty.getOtherTextColor());
+        paint.setTextSize(pageProperty.getOtherTextSize());
         paint.setColor(pageProperty.getOtherTextColor());
         x = UIUtils.dip2px(context, Element.PADDING_START);
         y = UIUtils.getDisplayHeight(context) - UIUtils.dip2px(context, Element.PADDING_BOTTOM);

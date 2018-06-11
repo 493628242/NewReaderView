@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.animation.LinearInterpolator;
 import android.widget.Scroller;
 
+import com.gray.newreaderview.reader.adapter.ReaderAdapter;
 import com.gray.newreaderview.reader.draw.Draw;
 import com.gray.newreaderview.reader.util.UIUtils;
 
@@ -40,8 +41,8 @@ public class ReaderView extends View {
     public static final int DRAW_ACTION_TO_NEXT = 1;//执行下翻页
     public static final int DRAW_ACTION_TO_PREVIOUS = 2;//执行前翻页
     public static final int DRAW_ACTION_RESET = 3;//执行复位
-    public static final int DRAW_ACTION_SCROLLING = 4;//执行中
-    private boolean mScrolling = false;
+    private ReaderAdapter mReaderAdapter;
+
 
     public ReaderView(Context context) {
         this(context, null);
@@ -70,31 +71,36 @@ public class ReaderView extends View {
 
     }
 
+    public void setReaderAdapter(ReaderAdapter readerAdapter) {
+        this.mReaderAdapter = readerAdapter;
+    }
+
     public void setDrawAction(int drawAction) {
         mDrawAction = drawAction;
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int width = UIUtils.getDisplayWidth(getContext());
-        int height = UIUtils.getDisplayHeight(getContext());
-        int specW = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY);
-        int specH = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
+        mWidth = UIUtils.getDisplayWidth(getContext());
+        mHeight = UIUtils.getDisplayHeight(getContext());
+        int specW = MeasureSpec.makeMeasureSpec(mWidth, MeasureSpec.EXACTLY);
+        int specH = MeasureSpec.makeMeasureSpec(mHeight, MeasureSpec.EXACTLY);
         if (mCurrentBM == null) {
-            mCurrentBM = Bitmap.createBitmap(width,
-                    height, Bitmap.Config.RGB_565);
+            mCurrentBM = Bitmap.createBitmap(mWidth,
+                    mHeight, Bitmap.Config.RGB_565);
         }
         if (mPreviousBM == null) {
-            mPreviousBM = Bitmap.createBitmap(width,
-                    height, Bitmap.Config.RGB_565);
+            mPreviousBM = Bitmap.createBitmap(mWidth,
+                    mHeight, Bitmap.Config.RGB_565);
         }
         if (mNextBM == null) {
-            mNextBM = Bitmap.createBitmap(width,
-                    height, Bitmap.Config.RGB_565);
+            mNextBM = Bitmap.createBitmap(mWidth,
+                    mHeight, Bitmap.Config.RGB_565);
         }
         super.onMeasure(specW, specH);
-        mDraw.drawNext(mCurrentBM, mNextBM);
-        mDraw.drawPrevious(mPreviousBM, mCurrentBM);
+        mDraw.drawPage(mCurrentBM, mReaderAdapter.getCurrPage());
+        mDraw.drawPage(mNextBM, mReaderAdapter.getNextPage());
+        mDraw.drawPage(mPreviousBM, mReaderAdapter.getPreviousPage());
     }
 
 
@@ -109,16 +115,16 @@ public class ReaderView extends View {
                 mDraw.onDraw(canvas, mPreviousBM, mCurrentBM, mNextBM);
                 break;
             case DRAW_ACTION_RESET:
-
-                mDrawAction = DRAW_ACTION_SCROLLING;
+                mDraw.onDraw(canvas, mPreviousBM, mCurrentBM, mNextBM);
+                mDrawAction = DRAW_ACTION_NONE;
                 break;
             case DRAW_ACTION_TO_NEXT:
-
-                mDrawAction = DRAW_ACTION_SCROLLING;
+                mDraw.moveToNext(canvas, mCurrentBM, mNextBM,
+                        mScroller.getCurrX(), mScroller.getCurrY());
                 break;
             case DRAW_ACTION_TO_PREVIOUS:
-
-                mDrawAction = DRAW_ACTION_SCROLLING;
+                mDraw.moveToPrevious(canvas, mPreviousBM, mCurrentBM,
+                        mScroller.getCurrX(), mScroller.getCurrY());
                 break;
         }
     }
@@ -129,8 +135,12 @@ public class ReaderView extends View {
             if (!mScroller.computeScrollOffset()) {
                 //如果需要滚动，也没有正在计算的滚动，则开始滚动计算
                 mScroller.startScroll((int) mOffsetX, (int) mOffsetY,
-                        (int) (mWidth - Math.abs(mOffsetX)),
-                        (int) (mHeight - Math.abs(mOffsetY)));
+                        mDrawAction == DRAW_ACTION_TO_NEXT ?
+                                (int) (Math.abs(mOffsetX) - mWidth) //翻往下一页
+                                : (int) (mWidth - Math.abs(mOffsetX)),//翻往前一页
+                        mDrawAction == DRAW_ACTION_TO_NEXT ?
+                                (int) (Math.abs(mOffsetY) - mHeight)//翻往下一页
+                                : (int) (mHeight - Math.abs(mOffsetY)), 1000);//翻往前一页
             }
         }
         if (mScroller.computeScrollOffset()) {
@@ -139,7 +149,7 @@ public class ReaderView extends View {
         } else {
             //结束则调用结束方法
             scrollOver();
-            mDrawAction = DRAW_ACTION_NONE;
+            mDrawAction = DRAW_ACTION_RESET;
         }
     }
 
@@ -147,13 +157,20 @@ public class ReaderView extends View {
      * 滚动结束
      */
     private void scrollOver() {
+        Bitmap temp = mCurrentBM;
         //交换BitMap标记
         if (mDrawAction == DRAW_ACTION_TO_NEXT) {
             //看下一页
-            Bitmap temp = mCurrentBM;
-
+            mCurrentBM = mNextBM;
+            mNextBM = mPreviousBM;
+            mPreviousBM = temp;
+            mDraw.drawPage(mNextBM, mReaderAdapter.getNextPage());
         } else if (mDrawAction == DRAW_ACTION_TO_PREVIOUS) {
             //看前一页
+            mCurrentBM = mPreviousBM;
+            mPreviousBM = mNextBM;
+            mNextBM = temp;
+            mDraw.drawPage(mPreviousBM, mReaderAdapter.getPreviousPage());
         }
     }
 

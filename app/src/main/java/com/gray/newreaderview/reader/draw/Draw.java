@@ -12,7 +12,7 @@ import com.gray.newreaderview.reader.element.Element;
 import com.gray.newreaderview.reader.util.PageProperty;
 import com.gray.newreaderview.reader.view.ReaderView;
 
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author wjy on 2018/6/7.
@@ -38,7 +38,7 @@ public abstract class Draw {
         resetPaint();
     }
 
-    public void drawPage(Bitmap bitmap, ArrayList<Element> elements) {
+    public void drawPage(Bitmap bitmap, List<Element> elements) {
         mCanvas.setBitmap(bitmap);
         mCanvas.drawColor(mPageProperty.getBgColor());
         if (elements == null) {
@@ -67,7 +67,14 @@ public abstract class Draw {
 
     public abstract void drawPrevious(Bitmap mPreviousBM, Bitmap mCurrentBM);
 
-    public abstract void onDraw(Canvas canvas, Bitmap mPreviousBM, Bitmap mCurrentBM, Bitmap mNextBM);
+    public abstract void onDraw(Canvas canvas, Bitmap mPreviousBM,
+                                Bitmap mCurrentBM, Bitmap mNextBM);
+
+    public abstract void moveToNext(Canvas canvas, Bitmap mCurrentBM,
+                                    Bitmap mNextBM, int currX, int currY);
+
+    public abstract void moveToPrevious(Canvas canvas, Bitmap mPreviousBM,
+                                        Bitmap mCurrentBM, int currX, int currY);
 
     public void setCurrentBM(Bitmap mCurrentBM) {
         this.mCurrentBM = mCurrentBM;
