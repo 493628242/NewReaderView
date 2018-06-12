@@ -2,6 +2,8 @@ package com.gray.newreaderview.reader.adapter;
 
 import android.content.Context;
 import android.support.annotation.Nullable;
+import android.util.Log;
+import android.widget.Toast;
 
 import com.gray.newreaderview.reader.bean.ChaptersBean;
 import com.gray.newreaderview.reader.element.Element;
@@ -10,6 +12,7 @@ import com.gray.newreaderview.reader.util.PageProperty;
 import com.gray.newreaderview.reader.util.PageUtils;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 /**
@@ -18,15 +21,19 @@ import java.util.List;
 public abstract class ReaderAdapter {
 
     protected PageUtils pageUtils;
+    protected LinkedHashMap<Integer, List<Integer>> wordMap;
+    protected LinkedHashMap<Integer, List<ArrayList<Element>>> cacheChapterMap;
 
-    protected LruCacheMap<Integer, List<ArrayList<Element>>> cacheChapterMap;
+    protected int mCurrChapterIndex; //当前章节位置
+    protected int mCurrPageIndex; //当前页面位置
 
-    protected int mChapterIndex; //章节位置
+    protected int mPreviousChapterIndex; //前一章节位置
+    protected int mPreviousPageIndex; //前一页面位置
 
-    protected int mPageIndex; //页面位置
+    protected int mNextChapterIndex; //后一章节位置
+    protected int mNextPageIndex; //后一页面位置
+
     protected List<ChaptersBean> chaptersBeans; //所有章节
-    private int mTempChapterIndex = -1;
-    private int mTempPageIndex = -1;
     public static final int MOVE_TO_NEXT = 0;
     public static final int MOVE_TO_PREVIOUS = 1;
 
@@ -34,6 +41,7 @@ public abstract class ReaderAdapter {
         this.pageUtils = new PageUtils(context, PageProperty.getInstance(context));
         cacheChapterMap = new LruCacheMap<>();
         this.chaptersBeans = chaptersBeans;
+        wordMap = new LinkedHashMap<>();
     }
 
     /**
@@ -46,31 +54,23 @@ public abstract class ReaderAdapter {
     /**
      * 获取当前页面的数据
      * <p>
-     * mChapterIndex 当前页面数
+     * mCurrChapterIndex 当前页面数
      */
     public List<Element> getCurrPage() {
-        return getPage(mChapterIndex, mPageIndex, false);
+        return getPage(mCurrChapterIndex, mCurrPageIndex, false);
     }
 
     /**
      * 获取下一页面的数据
      * <p>
-     * mChapterIndex 当前页面数
+     * mCurrChapterIndex 当前页面数
      */
 
     public List<Element> getNextPage() {
-        if (mChapterIndex + 1 < chaptersBeans.size()) {
-            mTempChapterIndex = -1;
-            mTempPageIndex = -1;
-            List<Element> page = getPage(mChapterIndex + 1, mPageIndex, false);
-            if (mTempChapterIndex != -1) {
-                mChapterIndex = mTempChapterIndex;
-            }
-            if (mTempPageIndex != -1) {
-                mPageIndex = mTempPageIndex;
-            }
-            return page;
+        if (mCurrPageIndex + 1 < chaptersBeans.size()) {
+            return getPage(mCurrChapterIndex, mCurrPageIndex + 1, false);
         } else {
+
             return null;
         }
     }
@@ -78,33 +78,17 @@ public abstract class ReaderAdapter {
     /**
      * 获取前一页面的数据
      * <p>
-     * mChapterIndex 当前的页面数 会使mChapterIndex 无效
+     * mCurrChapterIndex 当前的页面数 会使mChapterIndex 无效
      */
     public List<Element> getPreviousPage() {
-        if (mPageIndex - 1 < 0) {
-            if (mChapterIndex - 1 < 0) {
-                mChapterIndex = 0;
-                mPageIndex = 0;
+        if (mCurrPageIndex - 1 < 0) {
+            if (mCurrChapterIndex - 1 < 0) {
                 return null;
             } else {
-                List<Element> page = getPage(mChapterIndex - 1, 0, true);
-                if (mTempChapterIndex != -1) {
-                    mChapterIndex = mTempChapterIndex;
-                }
-                if (mTempPageIndex != -1) {
-                    mPageIndex = mTempPageIndex;
-                }
-                return page;
+                return getPage(mCurrChapterIndex - 1, 0, true);
             }
         } else {
-            List<Element> page = getPage(mChapterIndex, mPageIndex - 1, false);
-            if (mTempChapterIndex != -1) {
-                mChapterIndex = mTempChapterIndex;
-            }
-            if (mTempPageIndex != -1) {
-                mPageIndex = mTempPageIndex;
-            }
-            return page;
+            return getPage(mCurrChapterIndex, mCurrPageIndex - 1, false);
         }
     }
 
@@ -121,21 +105,15 @@ public abstract class ReaderAdapter {
             //缓存的Map中有所需章节
             if (needPageIndex < lists.size() && needPageIndex >= 0) {
                 //当前章节还有页面
-                mTempChapterIndex = needChapterIndex;
-                mTempPageIndex = needPageIndex;
-                return lists.get(needPageIndex);
+                return lists.get(fromEnd ? lists.size() - 1 : needPageIndex);
             } else {
                 //当前章节已无页面
                 if (needPageIndex > 0) {
-                    mTempChapterIndex = needChapterIndex + 1;
-                    mTempPageIndex = 0;
                     return getPage(needChapterIndex + 1,
-                            0, false);
+                            0, fromEnd);
                 } else {
-                    mTempChapterIndex = needChapterIndex - 1;
-                    mTempPageIndex = 0;
                     return getPage(needChapterIndex - 1,
-                            0, true);
+                            0, fromEnd);
                 }
             }
         } else {
@@ -144,36 +122,60 @@ public abstract class ReaderAdapter {
                 //还存在有未加载、分页的页面
                 List<ArrayList<Element>> elementsList
                         = pageUtils.setData(chaptersBeans.get(needChapterIndex));
+                ArrayList<Integer> pageNum = pageUtils.getPageNum();
+                if (pageNum != null && !pageNum.isEmpty()) {
+                    wordMap.put(needChapterIndex, pageNum);
+                }
                 cacheChapterMap.put(needChapterIndex, elementsList);
-                mTempChapterIndex = needChapterIndex;
-                mTempPageIndex = elementsList.isEmpty() ? -1 : fromEnd ?
-                        elementsList.size() - 1 : needPageIndex;
                 return elementsList.isEmpty() ? null : elementsList.get(fromEnd ?
                         elementsList.size() - 1 : needPageIndex);
             } else {
                 //目录的所有章节都已加载完
-                mTempChapterIndex = -1;
-                mTempPageIndex = -1;
                 return null;
             }
         }
-
     }
 
     /**
      * 是否是vip章节
      * <p>
-     * mPageIndex 当前章节序号
+     * mCurrPageIndex 当前章节序号
      */
     public abstract boolean isVipChapter();
 
     public void setStatus(int status) {
+        //更新当前页面的index
         switch (status) {
             case MOVE_TO_NEXT:
 
                 break;
             case MOVE_TO_PREVIOUS:
                 break;
+        }
+        Log.e("setStatus", mCurrChapterIndex + "------" + mCurrPageIndex);
+        Log.e("setStatus1", mPreviousChapterIndex + "------" + mPreviousPageIndex);
+        Log.e("setStatus2", mNextChapterIndex + "------" + mNextPageIndex);
+    }
+
+    public boolean canMoveToPrevious() {
+        return mCurrPageIndex > 0 || mCurrChapterIndex > 0;
+    }
+
+
+    public boolean canMoveToNext() {
+        List<ArrayList<Element>> arrayLists = cacheChapterMap.get(mCurrChapterIndex);
+        if (arrayLists != null) {
+            if (arrayLists.size() - 1 > mCurrPageIndex) {//当前章节还有页面
+                return true;
+            } else {//当前章节已无页面
+                if (mCurrChapterIndex < chaptersBeans.size() - 1) {//还有未分页章节
+                    return true;
+                } else {//所有章节都以分页完成
+                    return false;
+                }
+            }
+        } else {
+            return false;
         }
     }
 }

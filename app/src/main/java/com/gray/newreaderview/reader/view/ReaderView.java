@@ -9,12 +9,17 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.animation.LinearInterpolator;
 import android.widget.Scroller;
+import android.widget.Toast;
 
 import com.gray.newreaderview.reader.adapter.ReaderAdapter;
 import com.gray.newreaderview.reader.draw.Draw;
+import com.gray.newreaderview.reader.element.Element;
 import com.gray.newreaderview.reader.util.UIUtils;
+
+import java.util.List;
 
 /**
  * @author wjy on 2018/6/7.
@@ -42,6 +47,8 @@ public class ReaderView extends View {
     public static final int DRAW_ACTION_TO_PREVIOUS = 2;//执行前翻页
     public static final int DRAW_ACTION_RESET = 3;//执行复位
     private ReaderAdapter mReaderAdapter;
+    private boolean mCanMoveToPrevious = true;
+    private boolean mCanMoveToNext = true;
 
 
     public ReaderView(Context context) {
@@ -64,6 +71,24 @@ public class ReaderView extends View {
         mShowPopMinX = UIUtils.getDisplayWidth(getContext()) / 3;
         mShowPopMaxY = UIUtils.getDisplayHeight(getContext()) * 2 / 3;
         mShowPopMinY = UIUtils.getDisplayHeight(getContext()) / 3;
+        this.getViewTreeObserver().addOnGlobalLayoutListener(
+                new ViewTreeObserver.OnGlobalLayoutListener() {
+                    @Override
+                    public void onGlobalLayout() {
+                        Log.e("onGlobalLayout", "onGlobalLayout: ");
+                        List<Element> currPage = mReaderAdapter.getCurrPage();
+                        List<Element> nextPage = mReaderAdapter.getNextPage();
+                        List<Element> previousPage = mReaderAdapter.getPreviousPage();
+                        Log.e("onGlobalLayout", String.valueOf(currPage == null)
+                                + "\n" + String.valueOf(nextPage == null)
+                                + "\n" + String.valueOf(previousPage == null));
+                        mDraw.drawPage(mCurrentBM, currPage);
+                        mDraw.drawPage(mNextBM, nextPage);
+                        mDraw.drawPage(mPreviousBM, previousPage);
+                        ReaderView.this.getViewTreeObserver()
+                                .removeOnGlobalLayoutListener(this);
+                    }
+                });
     }
 
     public void setDraw(Draw mDraw) {
@@ -73,6 +98,10 @@ public class ReaderView extends View {
 
     public void setReaderAdapter(ReaderAdapter readerAdapter) {
         this.mReaderAdapter = readerAdapter;
+    }
+
+    public ReaderAdapter getReaderAdapter() {
+        return mReaderAdapter;
     }
 
     public void setDrawAction(int drawAction) {
@@ -98,11 +127,8 @@ public class ReaderView extends View {
                     mHeight, Bitmap.Config.RGB_565);
         }
         super.onMeasure(specW, specH);
-        mDraw.drawPage(mCurrentBM, mReaderAdapter.getCurrPage());
-        mDraw.drawPage(mNextBM, mReaderAdapter.getNextPage());
-        mDraw.drawPage(mPreviousBM, mReaderAdapter.getPreviousPage());
-    }
 
+    }
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -111,7 +137,6 @@ public class ReaderView extends View {
         }
         switch (mDrawAction) {
             case DRAW_ACTION_NONE:
-                Log.e("onDraw", "onDraw");
                 mDraw.onDraw(canvas, mPreviousBM, mCurrentBM, mNextBM);
                 break;
             case DRAW_ACTION_RESET:
@@ -119,6 +144,7 @@ public class ReaderView extends View {
                 mDrawAction = DRAW_ACTION_NONE;
                 break;
             case DRAW_ACTION_TO_NEXT:
+                Log.e("scroll", "onDraw: " + mScroller.getCurrX());
                 mDraw.moveToNext(canvas, mCurrentBM, mNextBM,
                         mScroller.getCurrX(), mScroller.getCurrY());
                 break;
@@ -140,7 +166,7 @@ public class ReaderView extends View {
                                 : (int) (mWidth - Math.abs(mOffsetX)),//翻往前一页
                         mDrawAction == DRAW_ACTION_TO_NEXT ?
                                 (int) (Math.abs(mOffsetY) - mHeight)//翻往下一页
-                                : (int) (mHeight - Math.abs(mOffsetY)), 1000);//翻往前一页
+                                : (int) (mHeight - Math.abs(mOffsetY)), 800);//翻往前一页
             }
         }
         if (mScroller.computeScrollOffset()) {
@@ -148,6 +174,8 @@ public class ReaderView extends View {
             invalidate();
         } else {
             //结束则调用结束方法
+            mOffsetX = 0;
+            mOffsetY = 0;
             scrollOver();
             mDrawAction = DRAW_ACTION_RESET;
         }
@@ -164,16 +192,19 @@ public class ReaderView extends View {
             mCurrentBM = mNextBM;
             mNextBM = mPreviousBM;
             mPreviousBM = temp;
+            mReaderAdapter.setStatus(ReaderAdapter.MOVE_TO_NEXT);
             mDraw.drawPage(mNextBM, mReaderAdapter.getNextPage());
         } else if (mDrawAction == DRAW_ACTION_TO_PREVIOUS) {
             //看前一页
             mCurrentBM = mPreviousBM;
             mPreviousBM = mNextBM;
             mNextBM = temp;
-            mDraw.drawPage(mPreviousBM, mReaderAdapter.getPreviousPage());
+            mReaderAdapter.setStatus(ReaderAdapter.MOVE_TO_PREVIOUS);
+            List<Element> previousPage = mReaderAdapter.getPreviousPage();
+            mDraw.drawPage(mPreviousBM, previousPage);
+
         }
     }
-
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -182,7 +213,6 @@ public class ReaderView extends View {
             case MotionEvent.ACTION_DOWN:
                 mDownX = event.getX();
                 mDownY = event.getY();
-                mScroller.startScroll((int) mDownX, (int) mDownY, 0, 0);
                 break;
             case MotionEvent.ACTION_MOVE:
                 if (mShowMenu) {
@@ -218,29 +248,53 @@ public class ReaderView extends View {
 //                        return performClick();
 //                    }
 //                }
-                if (mDownX > mShowPopMinX && mDownX < mShowPopMaxX
-                        && mDownY > mShowPopMinY && mDownY < mShowPopMaxY
-                        && event.getY() > mShowPopMinY && event.getY() < mShowPopMaxY
-                        && event.getX() > mShowPopMinX && event.getX() < mShowPopMaxX) {
-                    return performClick();
+                if (Math.abs(mOffsetX) < 100 && Math.abs(mOffsetY) < 100) {
+                    if (mDownX > mShowPopMinX && mDownX < mShowPopMaxX
+                            && mDownY > mShowPopMinY && mDownY < mShowPopMaxY
+                            && event.getY() > mShowPopMinY && event.getY() < mShowPopMaxY
+                            && event.getX() > mShowPopMinX && event.getX() < mShowPopMaxX) {
+                        return performClick();
+                    }
                 }
                 break;
         }
         if (mDraw != null) {
+//            if (!mCanMoveToNext && MotionEvent.ACTION_UP == event.getAction()) {
+//                Toast.makeText(getContext(), "没有更多", Toast.LENGTH_SHORT).show();
+//            }
+//            if (!mCanMoveToPrevious && MotionEvent.ACTION_UP == event.getAction()) {
+//                Toast.makeText(getContext(), "已至第一页", Toast.LENGTH_SHORT).show();
+//            }
+//            if (!mCanMoveToPrevious) {
+//                return true;
+//            } else {
+//                if (MotionEvent.ACTION_DOWN == event.getAction()) {
+//                    List<Element> previousPage = mReaderAdapter.getPreviousPage();
+//                    if (previousPage == null) {
+//                        mCanMoveToPrevious = false;
+//                        return true;
+//                    } else {
+//                        mCanMoveToPrevious = true;
+//                        mDraw.drawPage(mPreviousBM, previousPage);
+//                    }
+//                }
+//            }
+//            if (!mCanMoveToNext) {
+//                return true;
+//            } else {
+//                if (MotionEvent.ACTION_DOWN == event.getAction()) {
+//                    List<Element> nextPage = mReaderAdapter.getNextPage();
+//                    if (nextPage != null) {
+//                        mCanMoveToNext = true;
+//                        mDraw.drawPage(mNextBM, nextPage);
+//                    } else {
+//                        mCanMoveToNext = false;
+//                        return true;
+//                    }
+//                }
+//            }
             mDraw.onTouchEvent(event);
         }
         return true;
-    }
-
-    public Bitmap getmCurrentBM() {
-        return mCurrentBM;
-    }
-
-    public Bitmap getmPreviousBM() {
-        return mPreviousBM;
-    }
-
-    public Bitmap getmNextBM() {
-        return mNextBM;
     }
 }

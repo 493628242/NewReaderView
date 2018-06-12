@@ -53,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ReaderView reader = findViewById(R.id.readview);
-        reader.setDraw(new HorizontalMoveDraw(PageProperty.getInstance(this), reader));
+
         reader.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -62,15 +62,17 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         ArrayList<ChaptersBean> list = new ArrayList<>();
-        ChaptersBean bean = new ChaptersBean();
-        bean.setAuthorContent(author);
-        bean.setContent(word);
-        bean.setName(title);
+
         for (int i = 0; i < 10; i++) {
+           ChaptersBean bean = new ChaptersBean();
             bean.setId(i);
+            bean.setAuthorContent(author);
+            bean.setContent(word);
+            bean.setName(title);
             list.add(bean);
         }
         MyReaderAdapter adapter = new MyReaderAdapter(this, list);
         reader.setReaderAdapter(adapter);
+        reader.setDraw(new HorizontalMoveDraw(PageProperty.getInstance(this), reader));
     }
 }

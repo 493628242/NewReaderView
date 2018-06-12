@@ -7,6 +7,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.view.MotionEvent;
 
+import com.gray.newreaderview.reader.adapter.ReaderAdapter;
 import com.gray.newreaderview.reader.element.BottomElement;
 import com.gray.newreaderview.reader.element.Element;
 import com.gray.newreaderview.reader.util.PageProperty;
@@ -27,12 +28,14 @@ public abstract class Draw {
     protected ReaderView mReaderView;
     protected RectF mRectF;
     protected Rect mRect;
+    protected ReaderAdapter mAdapter;
 
     public Draw(PageProperty pageProperty, ReaderView view) {
         this.mCanvas = new Canvas();
         mPaint = new Paint();
         mPageProperty = pageProperty;
         mReaderView = view;
+        mAdapter = view.getReaderAdapter();
         mRectF = new RectF();
         mRect = new Rect();
         resetPaint();

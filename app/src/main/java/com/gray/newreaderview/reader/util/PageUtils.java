@@ -56,9 +56,13 @@ public class PageUtils {
         return paging();
     }
 
+    public ArrayList<Integer> getPageNum() {
+        return pageNum;
+    }
 
     //进行分页操作
     private ArrayList<ArrayList<Element>> paging() {
+        pageNum.clear();
         elementsList.clear();
         Rect rect = new Rect();
         boolean hasDrawAuthorHead = false;

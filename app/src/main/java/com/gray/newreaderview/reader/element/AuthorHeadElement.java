@@ -50,7 +50,7 @@ public class AuthorHeadElement extends Element {
         rectF.bottom += y;
         canvas.drawBitmap(bitmap, null, rectF, paint);
         paint.setTextAlign(Paint.Align.CENTER);
-        paint.setColor(pageProperty.getTextSize());
+        paint.setColor(pageProperty.getTextColor());
         paint.setTextSize(textSize);
         int tX = width / 2;
         int imgTitleSpace = 8;

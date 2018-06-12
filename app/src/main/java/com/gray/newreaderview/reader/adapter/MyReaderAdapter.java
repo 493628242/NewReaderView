@@ -23,7 +23,7 @@ public class MyReaderAdapter extends ReaderAdapter {
 
     @Override
     public boolean isVipChapter() {
-        ChaptersBean bean = chaptersBeans.get(mChapterIndex);
+        ChaptersBean bean = chaptersBeans.get(mCurrChapterIndex);
         return bean.getCurrency() != 0 && !bean.isBuy();
     }
 

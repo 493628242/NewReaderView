@@ -7,7 +7,9 @@ import android.graphics.ImageFormat;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Toast;
 
+import com.gray.newreaderview.reader.adapter.ReaderAdapter;
 import com.gray.newreaderview.reader.util.PageProperty;
 import com.gray.newreaderview.reader.util.UIUtils;
 import com.gray.newreaderview.reader.view.ReaderView;
@@ -39,25 +41,53 @@ public class HorizontalMoveDraw extends Draw {
             case MotionEvent.ACTION_MOVE:
                 mOffsetX = event.getX() - mDownX;
                 mOffsetY = event.getY() - mDownY;
-                Log.e("mOffsetX", mOffsetX + "X");
-                mReaderView.invalidate();
+                if (mOffsetX > 0) {
+                    if (mAdapter.canMoveToPrevious()) {
+                        mReaderView.invalidate();
+                    } else {
+                        Toast.makeText(mReaderView.getContext(), "已到第一页", Toast.LENGTH_SHORT).show();
+                    }
+                } else if (mOffsetX < 0) {
+                    if (mAdapter.canMoveToNext()) {
+                        mReaderView.invalidate();
+                    } else {
+                        Toast.makeText(mReaderView.getContext(), "已到最后一页", Toast.LENGTH_SHORT).show();
+                    }
+                }
                 break;
             case MotionEvent.ACTION_UP:
                 if (Math.abs(mOffsetX) > minX) {
                     if (mOffsetX > 0) {
                         //看前一页
-                        mReaderView.setDrawAction(ReaderView.DRAW_ACTION_TO_PREVIOUS);
+                        if (mAdapter.canMoveToPrevious()) {
+                            mReaderView.setDrawAction(ReaderView.DRAW_ACTION_TO_PREVIOUS);
+                        } else {
+                            Toast.makeText(mReaderView.getContext(), "已到第一页", Toast.LENGTH_SHORT).show();
+                        }
                     } else if (mOffsetX < 0) {
                         //看后一页
-                        mReaderView.setDrawAction(ReaderView.DRAW_ACTION_TO_NEXT);
+                        if (mAdapter.canMoveToNext()) {
+                            mReaderView.setDrawAction(ReaderView.DRAW_ACTION_TO_NEXT);
+                        } else {
+                            Toast.makeText(mReaderView.getContext(), "已到最后一页", Toast.LENGTH_SHORT).show();
+                        }
                     }
                 } else {
-                    if (mDownX > UIUtils.getDisplayWidth(mReaderView.getContext()) >> 1) {
+                    int halfWidth = UIUtils.getDisplayWidth(mReaderView.getContext()) >> 1;
+                    if (mDownX > halfWidth && event.getX() > halfWidth) {
                         //看后一页
-                        mReaderView.setDrawAction(ReaderView.DRAW_ACTION_TO_NEXT);
-                    } else {
+                        if (mAdapter.canMoveToNext()) {
+                            mReaderView.setDrawAction(ReaderView.DRAW_ACTION_TO_NEXT);
+                        } else {
+                            Toast.makeText(mReaderView.getContext(), "已到最后一页", Toast.LENGTH_SHORT).show();
+                        }
+                    } else if (mDownX < halfWidth && event.getX() < halfWidth) {
                         //看前一页
-                        mReaderView.setDrawAction(ReaderView.DRAW_ACTION_TO_PREVIOUS);
+                        if (mAdapter.canMoveToPrevious()) {
+                            mReaderView.setDrawAction(ReaderView.DRAW_ACTION_TO_PREVIOUS);
+                        } else {
+                            Toast.makeText(mReaderView.getContext(), "已到第一页", Toast.LENGTH_SHORT).show();
+                        }
                     }
                 }
                 mReaderView.postInvalidate();
@@ -92,11 +122,9 @@ public class HorizontalMoveDraw extends Draw {
 
     @Override
     public void onDraw(Canvas canvas, Bitmap mPreviousBM, Bitmap mCurrentBM, Bitmap mNextBM) {
-        Log.e("WH", "onDraw: " + ~mPreviousBM.getWidth() + "\n" + mPreviousBM.getHeight());
-        Log.e("onDraw", "onDraw: 移动");
         canvas.drawBitmap(mCurrentBM, mOffsetX, 0, null);
-        canvas.drawBitmap(mPreviousBM, ~mPreviousBM.getWidth() + mOffsetX + 1, 0, null);
-        canvas.drawBitmap(mNextBM, mNextBM.getWidth() + mOffsetX - 1, 0, null);
+        canvas.drawBitmap(mPreviousBM, ~mPreviousBM.getWidth() + mOffsetX, 0, null);
+        canvas.drawBitmap(mNextBM, mNextBM.getWidth() + mOffsetX, 0, null);
     }
 
     @Override
