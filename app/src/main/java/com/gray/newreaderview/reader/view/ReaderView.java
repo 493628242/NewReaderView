@@ -75,13 +75,9 @@ public class ReaderView extends View {
                 new ViewTreeObserver.OnGlobalLayoutListener() {
                     @Override
                     public void onGlobalLayout() {
-                        Log.e("onGlobalLayout", "onGlobalLayout: ");
                         List<Element> currPage = mReaderAdapter.getCurrPage();
                         List<Element> nextPage = mReaderAdapter.getNextPage();
                         List<Element> previousPage = mReaderAdapter.getPreviousPage();
-                        Log.e("onGlobalLayout", String.valueOf(currPage == null)
-                                + "\n" + String.valueOf(nextPage == null)
-                                + "\n" + String.valueOf(previousPage == null));
                         mDraw.drawPage(mCurrentBM, currPage);
                         mDraw.drawPage(mNextBM, nextPage);
                         mDraw.drawPage(mPreviousBM, previousPage);
@@ -166,7 +162,7 @@ public class ReaderView extends View {
                                 : (int) (mWidth - Math.abs(mOffsetX)),//翻往前一页
                         mDrawAction == DRAW_ACTION_TO_NEXT ?
                                 (int) (Math.abs(mOffsetY) - mHeight)//翻往下一页
-                                : (int) (mHeight - Math.abs(mOffsetY)), 800);//翻往前一页
+                                : (int) (mHeight - Math.abs(mOffsetY)), 500);//翻往前一页
             }
         }
         if (mScroller.computeScrollOffset()) {
@@ -193,7 +189,8 @@ public class ReaderView extends View {
             mNextBM = mPreviousBM;
             mPreviousBM = temp;
             mReaderAdapter.setStatus(ReaderAdapter.MOVE_TO_NEXT);
-            mDraw.drawPage(mNextBM, mReaderAdapter.getNextPage());
+            List<Element> nextPage = mReaderAdapter.getNextPage();
+            mDraw.drawPage(mNextBM, nextPage);
         } else if (mDrawAction == DRAW_ACTION_TO_PREVIOUS) {
             //看前一页
             mCurrentBM = mPreviousBM;
@@ -296,5 +293,17 @@ public class ReaderView extends View {
             mDraw.onTouchEvent(event);
         }
         return true;
+    }
+
+    public Bitmap getCurrentBM() {
+        return mCurrentBM;
+    }
+
+    public Bitmap getPreviousBM() {
+        return mPreviousBM;
+    }
+
+    public Bitmap getNextBM() {
+        return mNextBM;
     }
 }

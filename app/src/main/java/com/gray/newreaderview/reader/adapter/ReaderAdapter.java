@@ -3,7 +3,6 @@ package com.gray.newreaderview.reader.adapter;
 import android.content.Context;
 import android.support.annotation.Nullable;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.gray.newreaderview.reader.bean.ChaptersBean;
 import com.gray.newreaderview.reader.element.Element;
@@ -147,14 +146,33 @@ public abstract class ReaderAdapter {
         //更新当前页面的index
         switch (status) {
             case MOVE_TO_NEXT:
-
+                List<ArrayList<Element>> lists = cacheChapterMap.get(mCurrChapterIndex);
+                if (lists != null) {
+                    if (lists.size() > mCurrPageIndex + 1) {
+                        mCurrPageIndex += 1;
+                    } else {
+                        if (chaptersBeans.size() > mCurrChapterIndex + 1) {
+                            mCurrChapterIndex += 1;
+                            mCurrPageIndex = 0;
+                        }
+                    }
+                }
                 break;
             case MOVE_TO_PREVIOUS:
+                if (mCurrPageIndex > 0) {
+                    mCurrPageIndex -= 1;
+                } else {
+                    if (mCurrChapterIndex > 0) {
+                        mCurrChapterIndex -= 1;
+                        List<ArrayList<Element>> list = cacheChapterMap.get(mCurrChapterIndex);
+                        if (list != null) {
+                            mCurrPageIndex = list.size() - 1;
+                        }
+                    }
+                }
                 break;
         }
         Log.e("setStatus", mCurrChapterIndex + "------" + mCurrPageIndex);
-        Log.e("setStatus1", mPreviousChapterIndex + "------" + mPreviousPageIndex);
-        Log.e("setStatus2", mNextChapterIndex + "------" + mNextPageIndex);
     }
 
     public boolean canMoveToPrevious() {

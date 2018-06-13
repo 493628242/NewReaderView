@@ -91,5 +91,4 @@ public abstract class Draw {
         this.mNextBM = mNextBM;
     }
 
-
 }

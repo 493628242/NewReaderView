@@ -9,6 +9,7 @@ import android.widget.Toast;
 import com.gray.newreaderview.reader.adapter.MyReaderAdapter;
 import com.gray.newreaderview.reader.bean.ChaptersBean;
 import com.gray.newreaderview.reader.draw.HorizontalMoveDraw;
+import com.gray.newreaderview.reader.draw.RealMoveDraw;
 import com.gray.newreaderview.reader.util.PageProperty;
 import com.gray.newreaderview.reader.util.PageUtils;
 import com.gray.newreaderview.reader.view.ReaderView;
@@ -52,19 +53,21 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        ReaderView reader = findViewById(R.id.readview);
+        final ReaderView reader = findViewById(R.id.readview);
 
         reader.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Log.e("onClick", "onClick: ");
+                reader.setDraw(new RealMoveDraw(PageProperty.getInstance(MainActivity.this), reader));
+
                 Toast.makeText(MainActivity.this, "出现菜单", Toast.LENGTH_SHORT).show();
             }
         });
         ArrayList<ChaptersBean> list = new ArrayList<>();
 
         for (int i = 0; i < 10; i++) {
-           ChaptersBean bean = new ChaptersBean();
+            ChaptersBean bean = new ChaptersBean();
             bean.setId(i);
             bean.setAuthorContent(author);
             bean.setContent(word);

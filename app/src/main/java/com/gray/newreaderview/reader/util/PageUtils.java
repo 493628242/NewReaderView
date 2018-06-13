@@ -26,7 +26,7 @@ public class PageUtils {
     private String title = "";
     private String author = "";
     private ArrayList<ArrayList<Element>> elementsList;
-    private boolean calOver;
+    private boolean calOver = false;
     private String unCal = "";
     private String unCalAuthor = "";
     private boolean authorOver = false;
@@ -53,6 +53,8 @@ public class PageUtils {
         unCal = word;
         unCalAuthor = author;
         index = bean.getIndex();
+        calOver = false;
+        authorOver = false;
         return paging();
     }
 
