@@ -8,10 +8,9 @@ import android.widget.Toast;
 
 import com.gray.newreaderview.reader.adapter.MyReaderAdapter;
 import com.gray.newreaderview.reader.bean.ChaptersBean;
-import com.gray.newreaderview.reader.draw.HorizontalMoveDraw;
 import com.gray.newreaderview.reader.draw.RealMoveDraw;
+import com.gray.newreaderview.reader.draw.VerticalMoveDraw;
 import com.gray.newreaderview.reader.util.PageProperty;
-import com.gray.newreaderview.reader.util.PageUtils;
 import com.gray.newreaderview.reader.view.ReaderView;
 
 import java.util.ArrayList;
@@ -76,6 +75,6 @@ public class MainActivity extends AppCompatActivity {
         }
         MyReaderAdapter adapter = new MyReaderAdapter(this, list);
         reader.setReaderAdapter(adapter);
-        reader.setDraw(new HorizontalMoveDraw(PageProperty.getInstance(this), reader));
+        reader.setDraw(new VerticalMoveDraw(PageProperty.getInstance(this), reader));
     }
 }
